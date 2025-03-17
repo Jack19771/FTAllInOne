@@ -1,8 +1,17 @@
 :80 {
-    respond "Caddy działa! 🚀 Proxy jest dostępne pod /proxy/[IPv6]" 
-
-    handle_path /proxy/* {
-        uri strip_prefix /proxy
-        reverse_proxy http://[200:2be8:2285:7c01:8c61:a3c:bad2:39aa]:80
+    handle /lua-proxy/* {
+        lua {
+            content <<-EOL
+                function handle(r)
+                    local ip = r.path:match("^/lua-proxy/([0-9a-fA-F:]+)$")
+                    if ip then
+                        r:header("Location", "http://[" .. ip .. "]")
+                        r:respond(302, "", {["Content-Type"] = "text/plain"})
+                    else
+                        r:respond(400, "Invalid IPv6 address", {["Content-Type"] = "text/plain"})
+                    end
+                end
+            EOL
+        }
     }
 }
